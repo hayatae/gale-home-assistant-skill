@@ -1,22 +1,17 @@
-
 skillMetadata:
   sections:
-    - name: Options << Name of section
+    - name: Login
       fields:
-        - name: internal_python_variable_name
+        - name: host
           type: text
-          label: Setting Friendly Display Name
+          label: Host address
           value: ""
-          placeholder: demo prompt in the input box
-    - name: Login << Name of another section
-      fields:
-        - type: label
-          label: Just a little bit of extra info for the user to understand following settings
-        - name: username
-          type: text
-          label: Username
-          value: ""
-        - name: password
+        - name: token
           type: password
-          label: Password
+          label: Long-Lived Access Token
           value: ""
+    - name: Devices
+      fields:
+        - name: device_map
+          type: text
+          label: Device Map
