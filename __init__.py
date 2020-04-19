@@ -14,14 +14,16 @@ class GaleHomeAssistant(MycroftSkill):
             self.settings.get('host', ''),
             self.settings.get('token', '')
         )
+        self.deviceMap = {}
         self.settings_change_callback = self.on_settings_changed
         self.on_settings_changed()
 
     def on_settings_changed(self):
         try:
             self.deviceMap = json.loads(self.settings.get('device_map', '{}'))
-            for entity in self.deviceMap['scene']:
-                self.register_vocabulary(entity, 'HAScene')
+            if self.deviceMap['scene']:
+                for entity in self.deviceMap['scene']:
+                    self.register_vocabulary(entity, 'HAScene')
         except json.JSONDecodeError:
             self.log.error("Invalid JSON in device map: %s" %
                            self.settings.get('device_map'))
@@ -31,7 +33,7 @@ class GaleHomeAssistant(MycroftSkill):
         entity = message.data["utterance"]
         entityId = ''
 
-        if entity in self.deviceMap['scene']:
+        if self.deviceMap['scene'] and entity in self.deviceMap['scene']:
             entityId = self.deviceMap['scene'][entity]
 
         if not entityId:
@@ -45,9 +47,9 @@ class GaleHomeAssistant(MycroftSkill):
         entity = message.data.get('entityOn')
         entityId = ''
 
-        if entity in self.deviceMap['switch']:
+        if self.deviceMap['switch'] and entity in self.deviceMap['switch']:
             entityId = self.deviceMap['switch'][entity]
-        elif entity in self.deviceMap['light']:
+        elif self.deviceMap['light'] and entity in self.deviceMap['light']:
             entityId = self.deviceMap['switch'][entity]
 
         if not entityId:
@@ -61,10 +63,10 @@ class GaleHomeAssistant(MycroftSkill):
         entity = message.data.get('entityOff')
         entityId = ''
 
-        if entity in self.deviceMap['switch']:
+        if self.deviceMap['switch'] and entity in self.deviceMap['switch']:
             entityId = self.deviceMap['switch'][entity]
-        elif entity in self.deviceMap['light']:
-            entityId = self.deviceMap['switch'][entity]
+        elif self.deviceMap['light'] and entity in self.deviceMap['light']:
+            entityId = self.deviceMap['light'][entity]
 
         if not entityId:
             self.speak_dialog('NotFound', {'entity': entity})
@@ -81,10 +83,10 @@ class GaleHomeAssistant(MycroftSkill):
         lightFound = False
         switchFound = False
 
-        if entity in self.deviceMap['light']:
+        if self.deviceMap['light'] and entity in self.deviceMap['light']:
             lightFound = True
             self.ha.setLevel(self.deviceMap['light'][entity], level)
-        if entity in self.deviceMap['switch']:
+        if self.deviceMap['switch'] and entity in self.deviceMap['switch']:
             switchFound = True
             if level > 0:
                 self.ha.turnOn(self.deviceMap['switch'][entity])
