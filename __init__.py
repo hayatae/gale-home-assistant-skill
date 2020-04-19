@@ -10,15 +10,18 @@ class GaleHomeAssistant(MycroftSkill):
         self.ha = None
 
     def initialize(self):
-        self.ha = HomeAssistantClient(
-            self.settings.get('host', ''),
-            self.settings.get('token', '')
-        )
         self.deviceMap = {}
         self.settings_change_callback = self.on_settings_changed
         self.on_settings_changed()
 
     def on_settings_changed(self):
+        # Create new HA Client with host/token settings
+        self.ha = HomeAssistantClient(
+            self.settings.get('host', ''),
+            self.settings.get('token', '')
+        )
+
+        # Load and process device map
         try:
             self.deviceMap = json.loads(self.settings.get('device_map', '{}'))
             scenes = self.deviceMap.get('scene', {})
