@@ -21,9 +21,9 @@ class GaleHomeAssistant(MycroftSkill):
     def on_settings_changed(self):
         try:
             self.deviceMap = json.loads(self.settings.get('device_map', '{}'))
-            if self.deviceMap['scene']:
-                for entity in self.deviceMap['scene']:
-                    self.register_vocabulary(entity, 'HAScene')
+            scenes = self.deviceMap.get('scene', {})
+            for sceneName in scenes:
+                self.register_vocabulary(sceneName, 'HAScene')
         except json.JSONDecodeError:
             self.log.error("Invalid JSON in device map: %s" %
                            self.settings.get('device_map'))
@@ -31,10 +31,8 @@ class GaleHomeAssistant(MycroftSkill):
     @intent_handler(IntentBuilder('RunScene').require('HAScene'))
     def handle_run_scene(self, message):
         entity = message.data["utterance"]
-        entityId = ''
-
-        if self.deviceMap['scene'] and entity in self.deviceMap['scene']:
-            entityId = self.deviceMap['scene'][entity]
+        scenes = self.deviceMap.get('scene', {})
+        entityId = scenes.get(entity, '')
 
         if not entityId:
             self.speak_dialog('NotFound', {'entity': entity})
@@ -45,12 +43,15 @@ class GaleHomeAssistant(MycroftSkill):
     @intent_handler(IntentBuilder('TurnOn').require('entityOn'))
     def handle_turn_on(self, message):
         entity = message.data.get('entityOn')
-        entityId = ''
+        switches = self.deviceMap.get('switch', {})
+        lights = self.deviceMap.get('light', {})
 
-        if self.deviceMap['switch'] and entity in self.deviceMap['switch']:
-            entityId = self.deviceMap['switch'][entity]
-        elif self.deviceMap['light'] and entity in self.deviceMap['light']:
-            entityId = self.deviceMap['switch'][entity]
+        # Check switch names first
+        entityId = switches.get(entity, '')
+
+        # Then check lights
+        if not entityId:
+            entityId = lights.get(entity, '')
 
         if not entityId:
             self.speak_dialog('NotFound', {'entity': entity})
@@ -61,12 +62,15 @@ class GaleHomeAssistant(MycroftSkill):
     @intent_handler(IntentBuilder('TurnOff').require('entityOff'))
     def handle_turn_off(self, message):
         entity = message.data.get('entityOff')
-        entityId = ''
+        switches = self.deviceMap.get('switch', {})
+        lights = self.deviceMap.get('light', {})
 
-        if self.deviceMap['switch'] and entity in self.deviceMap['switch']:
-            entityId = self.deviceMap['switch'][entity]
-        elif self.deviceMap['light'] and entity in self.deviceMap['light']:
-            entityId = self.deviceMap['light'][entity]
+        # Check switch names first
+        entityId = switches.get(entity, '')
+
+        # Then check lights
+        if not entityId:
+            entityId = lights.get(entity, '')
 
         if not entityId:
             self.speak_dialog('NotFound', {'entity': entity})
@@ -80,18 +84,18 @@ class GaleHomeAssistant(MycroftSkill):
     def handle_set_level(self, message):
         entity = message.data.get('entity')
         level = int(message.data.get('level'))
-        lightFound = False
-        switchFound = False
+        switches = self.deviceMap.get('switch', {})
+        lights = self.deviceMap.get('light', {})
+        lightFound = lights.get(entity, '')
+        switchFound = switches.get(entity, '')
 
-        if self.deviceMap['light'] and entity in self.deviceMap['light']:
-            lightFound = True
-            self.ha.setLevel(self.deviceMap['light'][entity], level)
-        if self.deviceMap['switch'] and entity in self.deviceMap['switch']:
-            switchFound = True
+        if lightFound:
+            self.ha.setLevel(lightFound, level)
+        if switchFound:
             if level > 0:
-                self.ha.turnOn(self.deviceMap['switch'][entity])
+                self.ha.turnOn(switchFound)
             else:
-                self.ha.turnOff(self.deviceMap['switch'][entity])
+                self.ha.turnOff(switchFound)
 
         if lightFound:
             self.speak_dialog('LightLevel', {
