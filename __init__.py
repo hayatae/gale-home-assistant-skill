@@ -1,7 +1,7 @@
 from mycroft import MycroftSkill, intent_handler
 from mycroft.skills.audioservice import AudioService
 from adapt.intent import IntentBuilder
-from mycroft_bus_client import Message
+from mycroft_bus_client import MessageBusClient, Message
 from .ha_client import HomeAssistantClient
 import json
 
@@ -49,9 +49,9 @@ class GaleHomeAssistant(MycroftSkill):
             self.ha.runScript(entityId)
             if entity == "good morning":
                 self.speak_dialog('GoodMorning')
-                self.emitter.emit(Message("recognizer_loop:utterance",
-                                          {'utterances': ["what's the weather"],
-                                           'lang': 'en-us'}))
+                self.bus.emit(Message("recognizer_loop:utterance",
+                                      {'utterances': ["what's the weather"],
+                                       'lang': 'en-us'}))
             else:
                 self.speak_dialog('RunningScript', {'entity': entity})
 
