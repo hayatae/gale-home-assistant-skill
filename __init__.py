@@ -1,4 +1,5 @@
 from mycroft import MycroftSkill, intent_handler
+from mycroft.skills.audioservice import AudioService
 from adapt.intent import IntentBuilder
 from mycroft_bus_client import Message
 from .ha_client import HomeAssistantClient
@@ -11,6 +12,7 @@ class GaleHomeAssistant(MycroftSkill):
         self.ha = None
 
     def initialize(self):
+        self.audio_service = AudioService(self.bus)
         self.deviceMap = {}
         self.settings_change_callback = self.on_settings_changed
         self.on_settings_changed()
