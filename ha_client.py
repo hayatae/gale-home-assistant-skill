@@ -33,3 +33,7 @@ class HomeAssistantClient(object):
     def runScene(self, entityId):
         data = {'entity_id': entityId}
         self.execute_service('scene', 'turn_on', data)
+
+    def runScript(self, entityId):
+        data = {'entity_id': entityId}
+        self.execute_service('script', 'turn_on', data)

@@ -1,5 +1,6 @@
 from mycroft import MycroftSkill, intent_handler
 from adapt.intent import IntentBuilder
+from mycroft_bus_client import Message
 from .ha_client import HomeAssistantClient
 import json
 
@@ -25,11 +26,32 @@ class GaleHomeAssistant(MycroftSkill):
         try:
             self.deviceMap = json.loads(self.settings.get('device_map', '{}'))
             scenes = self.deviceMap.get('scene', {})
+            scripts = self.deviceMap.get('script', {})
             for sceneName in scenes:
                 self.register_vocabulary(sceneName, 'HAScene')
+            for scriptName in scripts:
+                self.register_vocabulary(scriptName, 'HAScript')
         except json.JSONDecodeError:
             self.log.error("Invalid JSON in device map: %s" %
                            self.settings.get('device_map'))
+
+    @intent_handler(IntentBuilder('RunScript').require('HAScript'))
+    def handle_run_script(self, message):
+        entity = message.data["utterance"]
+        scripts = self.deviceMap.get('script', {})
+        entityId = scripts.get(entity, '')
+
+        if not entityId:
+            self.speak_dialog('NotFound', {'entity': entity})
+        else:
+            self.ha.runScript(entityId)
+            if entity == "good morning":
+                self.speak_dialog('GoodMorning')
+                self.emitter.emit(Message("recognizer_loop:utterance",
+                                          {'utterances': ["what's the weather"],
+                                           'lang': 'en-us'}))
+            else:
+                self.speak_dialog('RunningScript', {'entity': entity})
 
     @intent_handler(IntentBuilder('RunScene').require('HAScene'))
     def handle_run_scene(self, message):
@@ -41,7 +63,13 @@ class GaleHomeAssistant(MycroftSkill):
             self.speak_dialog('NotFound', {'entity': entity})
         else:
             self.ha.runScene(entityId)
-            self.speak_dialog('TurnedOn', {'entity': entity})
+            if entity == "good night":
+                self.speak_dialog('GoodNight')
+            elif entity == "bedtime":
+                self.audio_service.play(
+                    'file:///home/pi/mycroft-core/mycroft/res/snd/acknowledge.mp3')
+            else:
+                self.speak_dialog('TurnedOn', {'entity': entity})
 
     @intent_handler(IntentBuilder('TurnOn').require('entityOn'))
     def handle_turn_on(self, message):
